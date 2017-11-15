@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -75,6 +75,9 @@ namespace LiveCharts.Wpf
 
         #region Properties
 
+        /// <summary>
+        /// The draws heat range property
+        /// </summary>
         public static readonly DependencyProperty DrawsHeatRangeProperty = DependencyProperty.Register(
             "DrawsHeatRange", typeof(bool), typeof(HeatSeries),
             new PropertyMetadata(default(bool), CallChartUpdater()));
@@ -87,6 +90,9 @@ namespace LiveCharts.Wpf
             set { SetValue(DrawsHeatRangeProperty, value); }
         }
 
+        /// <summary>
+        /// The gradient stop collection property
+        /// </summary>
         public static readonly DependencyProperty GradientStopCollectionProperty = DependencyProperty.Register(
             "GradientStopCollection", typeof(GradientStopCollection), typeof(HeatSeries), new PropertyMetadata(default(GradientStopCollection)));
         /// <summary>
@@ -117,9 +123,15 @@ namespace LiveCharts.Wpf
 
         #region Overridden Methods
 
-        public override IChartPointView GetPointView(IChartPointView view, ChartPoint point, string label)
+        /// <summary>
+        /// Gets the view of a given point
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="label"></param>
+        /// <returns></returns>
+        public override IChartPointView GetPointView(ChartPoint point, string label)
         {
-            var pbv = (HeatPoint) view;
+            var pbv = (HeatPoint) point.View;
 
             if (pbv == null)
             {
@@ -166,19 +178,28 @@ namespace LiveCharts.Wpf
 
             if (pbv.HoverShape != null) pbv.HoverShape.Visibility = Visibility;
 
-            if (DataLabels && pbv.DataLabel == null)
+            if (DataLabels)
             {
-                pbv.DataLabel = BindATextBlock(0);
-                Panel.SetZIndex(pbv.DataLabel, int.MaxValue - 1);
-
-                Model.Chart.View.AddToDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = UpdateLabelContent(new DataLabelViewModel
+                {
+                    FormattedText = label,
+                    Point = point
+                }, pbv.DataLabel);
             }
 
-            if (pbv.DataLabel != null) pbv.DataLabel.Text = label;
+            if (!DataLabels && pbv.DataLabel != null)
+            {
+                Model.Chart.View.RemoveFromDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = null;
+            }
 
             return pbv;
         }
 
+        /// <summary>
+        /// Erases series
+        /// </summary>
+        /// <param name="removeFromView"></param>
         public override void Erase(bool removeFromView = true)
         {
             Values.GetPoints(this).ForEach(p =>
@@ -189,6 +210,9 @@ namespace LiveCharts.Wpf
             if (removeFromView) Model.Chart.View.RemoveFromView(this);
         }
 
+        /// <summary>
+        /// Defines special elements to draw according to the series type
+        /// </summary>
         public override void DrawSpecializedElements()
         {
             if (DrawsHeatRange)
@@ -233,8 +257,13 @@ namespace LiveCharts.Wpf
             }
         }
 
+        /// <summary>
+        /// Places specializes items
+        /// </summary>
         public override void PlaceSpecializedElements()
         {
+            if (!DrawsHeatRange) return;
+
             ColorRangeControl.UpdateFill(GradientStopCollection);
 
             ColorRangeControl.Height = Model.Chart.DrawMargin.Height;
@@ -261,6 +290,9 @@ namespace LiveCharts.Wpf
             DefaultFillOpacity = 0.4;
         }
 
+        /// <summary>
+        /// Initializes the series colors if they are not set
+        /// </summary>
         public override void InitializeColors()
         {
             var wpfChart = (Chart)Model.Chart.View;

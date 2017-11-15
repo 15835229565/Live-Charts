@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -23,15 +23,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows.Controls;
 using System.Xml;
-using System.Xml.Linq;
-using LiveCharts.Helpers;
 using LiveCharts.Maps;
 
 namespace LiveCharts.Wpf.Maps
 {
-    public static class MapResolver
+    internal static class MapResolver
     {
         public static LvcMap Get(string file)
         {
@@ -39,13 +36,7 @@ namespace LiveCharts.Wpf.Maps
 
             if (!File.Exists(file))
             {
-#if DEBUG
-                Console.WriteLine("File not found!");
-#endif
-#pragma warning disable 162
-                // ReSharper disable once HeuristicUnreachableCode
-                return null;
-#pragma warning restore 162
+                throw new FileNotFoundException(String.Format("This file {0} was not found.", file));
             }
 
             var svgMap = new LvcMap

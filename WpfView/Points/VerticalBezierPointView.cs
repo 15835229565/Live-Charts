@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using LiveCharts.Charts;
+using LiveCharts.Dtos;
 
 namespace LiveCharts.Wpf.Points
 {
@@ -36,6 +37,8 @@ namespace LiveCharts.Wpf.Points
 
             Container.Segments.Remove(Segment);
             Container.Segments.Insert(index, Segment);
+
+            ValidArea = new CoreRectangle(current.ChartLocation.X - 7.5, current.ChartLocation.Y - 7.5, 15, 15);
 
             if (IsNew)
             {
@@ -59,22 +62,47 @@ namespace LiveCharts.Wpf.Points
                 }
                 else
                 {
-                    Segment.Point1 = new Point(0, Data.Point1.Y);
-                    Segment.Point2 = new Point(0, Data.Point2.Y);
-                    Segment.Point3 = new Point(0, Data.Point3.Y);
-
-                    if (DataLabel != null)
+                    if (current.SeriesView.IsFirstDraw)
                     {
-                        Canvas.SetTop(DataLabel, current.ChartLocation.Y - DataLabel.ActualHeight * .5);
-                        Canvas.SetLeft(DataLabel, 0);
+                        Segment.Point1 = new Point(0, Data.Point1.Y);
+                        Segment.Point2 = new Point(0, Data.Point2.Y);
+                        Segment.Point3 = new Point(0, Data.Point3.Y);
+
+                        if (Shape != null)
+                        {
+                            Canvas.SetTop(Shape, current.ChartLocation.Y - Shape.Height * .5);
+                            Canvas.SetLeft(Shape, 0);
+                        }
+                        if (DataLabel != null)
+                        {
+                            Canvas.SetTop(DataLabel, current.ChartLocation.Y - DataLabel.ActualHeight * .5);
+                            Canvas.SetLeft(DataLabel, 0);
+                        }
                     }
-
-                    if (Shape != null)
+                    else
                     {
-                        Canvas.SetTop(Shape, current.ChartLocation.Y - Shape.Height * .5);
-                        Canvas.SetLeft(Shape, 0);
+                        var startPoint = ((LineSeries) current.SeriesView).Splitters[0].Left.Point;
+                        Segment.Point1 = startPoint;
+                        Segment.Point2 = startPoint;
+                        Segment.Point3 = startPoint;
+
+                        if (Shape != null)
+                        {
+                            Canvas.SetTop(Shape, startPoint.Y - Shape.Height * .5);
+                            Canvas.SetLeft(Shape,  startPoint.X);
+                        }
+                        if (DataLabel != null)
+                        {
+                            Canvas.SetTop(DataLabel, startPoint.Y - DataLabel.ActualHeight * .5);
+                            Canvas.SetLeft(DataLabel, startPoint.X);
+                        }
                     }
                 }
+            }
+            else if (DataLabel != null && double.IsNaN(Canvas.GetLeft(DataLabel)))
+            {
+                Canvas.SetTop(DataLabel, current.ChartLocation.Y - DataLabel.ActualHeight * .5);
+                Canvas.SetLeft(DataLabel, 0);
             }
 
             #region No Animated
@@ -157,7 +185,7 @@ namespace LiveCharts.Wpf.Points
         {
             var lineSeries = (LineSeries)point.SeriesView;
             if (Shape != null) Shape.Fill = Shape.Stroke;
-            lineSeries.StrokeThickness = lineSeries.StrokeThickness + 1;
+            lineSeries.Path.StrokeThickness = lineSeries.StrokeThickness + 1;
         }
 
         public override void OnHoverLeave(ChartPoint point)
@@ -165,9 +193,9 @@ namespace LiveCharts.Wpf.Points
             var lineSeries = (LineSeries)point.SeriesView;
             if (Shape != null)
                 Shape.Fill = point.Fill == null
-                    ? lineSeries.PointForeround
+                    ? lineSeries.PointForeground
                     : (Brush) point.Fill;
-            lineSeries.StrokeThickness = lineSeries.StrokeThickness - 1;
+            lineSeries.Path.StrokeThickness = lineSeries.StrokeThickness;
         }
     }
 }

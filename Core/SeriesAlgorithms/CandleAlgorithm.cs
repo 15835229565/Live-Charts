@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -27,14 +27,26 @@ using LiveCharts.Dtos;
 
 namespace LiveCharts.SeriesAlgorithms
 {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso cref="LiveCharts.SeriesAlgorithm" />
+    /// <seealso cref="LiveCharts.Definitions.Series.ICartesianSeries" />
     public class CandleAlgorithm : SeriesAlgorithm, ICartesianSeries
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CandleAlgorithm"/> class.
+        /// </summary>
+        /// <param name="view">The view.</param>
         public CandleAlgorithm(ISeriesView view) : base(view)
         {
             SeriesOrientation = SeriesOrientation.Horizontal;
             PreferredSelectionMode = TooltipSelectionMode.SharedXValues;
         }
 
+        /// <summary>
+        /// Updates this instance.
+        /// </summary>
         public override void Update()
         {
             var castedSeries = (IFinancialSeriesView) View;
@@ -60,7 +72,7 @@ namespace LiveCharts.SeriesAlgorithms
             {
                 var x = ChartFunctions.ToDrawMargin(chartPoint.X, AxisOrientation.X, Chart, View.ScalesXAt);
 
-                chartPoint.View = View.GetPointView(chartPoint.View, chartPoint,
+                chartPoint.View = View.GetPointView(chartPoint,
                     View.DataLabels ? View.GetLabelPointFormatter()(chartPoint) : null);
 
                 chartPoint.SeriesView = View;
@@ -94,18 +106,12 @@ namespace LiveCharts.SeriesAlgorithms
 
         double ICartesianSeries.GetMinY(AxisCore axis)
         {
-            var f = AxisLimits.SeparatorMin(axis);
-            return CurrentYAxis.BotLimit >= 0 && CurrentYAxis.TopLimit > 0
-                ? (f >= 0 ? f : 0)
-                : f;
+            return AxisLimits.SeparatorMin(axis);
         }
 
         double ICartesianSeries.GetMaxY(AxisCore axis)
         {
-            var f = AxisLimits.SeparatorMax(axis);
-            return CurrentYAxis.BotLimit < 0 && CurrentYAxis.TopLimit <= 0
-                ? (f >= 0 ? f : 0)
-                : f;
+            return AxisLimits.SeparatorMaxRounded(axis);
         }
     }
 }

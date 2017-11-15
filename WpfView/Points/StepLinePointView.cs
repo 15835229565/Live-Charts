@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -33,35 +33,52 @@ namespace LiveCharts.Wpf.Points
     {
         public double DeltaX { get; set; }
         public double DeltaY { get; set; }
-        public Line VerticalLine { get; set; }
-        public Line HorizontalLine { get; set; }
+        public Line Line1 { get; set; }
+        public Line Line2 { get; set; }
         public Path Shape { get; set; }
 
         public override void DrawOrMove(ChartPoint previousDrawn, ChartPoint current, int index, ChartCore chart)
         {
+            var invertedMode = ((StepLineSeries) current.SeriesView).InvertedMode;
+
             if (IsNew)
             {
-                VerticalLine.X1 = current.ChartLocation.X;
-                VerticalLine.X2 = current.ChartLocation.X;
-                VerticalLine.Y1 = chart.DrawMargin.Height;
-                VerticalLine.Y2 = chart.DrawMargin.Height;
+                if (invertedMode)
+                {
+                    Line1.X1 = current.ChartLocation.X;
+                    Line1.X2 = current.ChartLocation.X - DeltaX;
+                    Line1.Y1 = chart.DrawMargin.Height;
+                    Line1.Y2 = chart.DrawMargin.Height;
 
-                HorizontalLine.X1 = current.ChartLocation.X - DeltaX;
-                HorizontalLine.X2 = current.ChartLocation.X;
-                HorizontalLine.Y1 = chart.DrawMargin.Height;
-                HorizontalLine.Y2 = chart.DrawMargin.Height;
+                    Line2.X1 = current.ChartLocation.X - DeltaX;
+                    Line2.X2 = current.ChartLocation.X - DeltaX;
+                    Line2.Y1 = chart.DrawMargin.Height;
+                    Line2.Y2 = chart.DrawMargin.Height;
+                }
+                else
+                {
+                    Line1.X1 = current.ChartLocation.X;
+                    Line1.X2 = current.ChartLocation.X;
+                    Line1.Y1 = chart.DrawMargin.Height;
+                    Line1.Y2 = chart.DrawMargin.Height;
+
+                    Line2.X1 = current.ChartLocation.X - DeltaX;
+                    Line2.X2 = current.ChartLocation.X;
+                    Line2.Y1 = chart.DrawMargin.Height;
+                    Line2.Y2 = chart.DrawMargin.Height;
+                }
 
                 if (Shape != null)
                 {
                     Canvas.SetLeft(Shape, current.ChartLocation.X - Shape.Width/2);
                     Canvas.SetTop(Shape, chart.DrawMargin.Height);
                 }
+            }
 
-                if (DataLabel != null)
-                {
-                    Canvas.SetTop(DataLabel, chart.DrawMargin.Height);
-                    Canvas.SetLeft(DataLabel, current.ChartLocation.X);
-                }
+            if (DataLabel != null && double.IsNaN(Canvas.GetLeft(DataLabel)))
+            {
+                Canvas.SetTop(DataLabel, chart.DrawMargin.Height);
+                Canvas.SetLeft(DataLabel, current.ChartLocation.X);
             }
 
             if (HoverShape != null)
@@ -74,15 +91,30 @@ namespace LiveCharts.Wpf.Points
 
             if (chart.View.DisableAnimations)
             {
-                VerticalLine.X1 = current.ChartLocation.X;
-                VerticalLine.X2 = current.ChartLocation.X;
-                VerticalLine.Y1 = current.ChartLocation.Y;
-                VerticalLine.Y2 = current.ChartLocation.Y - DeltaY;
+                if (invertedMode)
+                {
+                    Line1.X1 = current.ChartLocation.X;
+                    Line1.X2 = current.ChartLocation.X - DeltaX;
+                    Line1.Y1 = current.ChartLocation.Y;
+                    Line1.Y2 = current.ChartLocation.Y;
 
-                HorizontalLine.X1 = current.ChartLocation.X - DeltaX;
-                HorizontalLine.X2 = current.ChartLocation.X;
-                HorizontalLine.Y1 = current.ChartLocation.Y - DeltaY;
-                HorizontalLine.Y2 = current.ChartLocation.Y - DeltaY;
+                    Line2.X1 = current.ChartLocation.X - DeltaX;
+                    Line2.X2 = current.ChartLocation.X - DeltaX;
+                    Line2.Y1 = current.ChartLocation.Y;
+                    Line2.Y2 = current.ChartLocation.Y - DeltaY;
+                }
+                else
+                {
+                    Line1.X1 = current.ChartLocation.X;
+                    Line1.X2 = current.ChartLocation.X;
+                    Line1.Y1 = current.ChartLocation.Y;
+                    Line1.Y2 = current.ChartLocation.Y - DeltaY;
+
+                    Line2.X1 = current.ChartLocation.X - DeltaX;
+                    Line2.X2 = current.ChartLocation.X;
+                    Line2.Y1 = current.ChartLocation.Y - DeltaY;
+                    Line2.Y2 = current.ChartLocation.Y - DeltaY;
+                }
 
                 if (Shape != null)
                 {
@@ -104,23 +136,46 @@ namespace LiveCharts.Wpf.Points
 
             var animSpeed = chart.View.AnimationsSpeed;
 
-            VerticalLine.BeginAnimation(Line.X1Property,
-                new DoubleAnimation(current.ChartLocation.X, animSpeed));
-            VerticalLine.BeginAnimation(Line.X2Property,
-                new DoubleAnimation(current.ChartLocation.X, animSpeed));
-            VerticalLine.BeginAnimation(Line.Y1Property,
-                new DoubleAnimation(current.ChartLocation.Y, animSpeed));
-            VerticalLine.BeginAnimation(Line.Y2Property,
-                new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
+            if (invertedMode)
+            {
+                Line1.BeginAnimation(Line.X1Property,
+                    new DoubleAnimation(current.ChartLocation.X, animSpeed));
+                Line1.BeginAnimation(Line.X2Property,
+                    new DoubleAnimation(current.ChartLocation.X - DeltaX, animSpeed));
+                Line1.BeginAnimation(Line.Y1Property,
+                    new DoubleAnimation(current.ChartLocation.Y, animSpeed));
+                Line1.BeginAnimation(Line.Y2Property,
+                    new DoubleAnimation(current.ChartLocation.Y, animSpeed));
 
-            HorizontalLine.BeginAnimation(Line.X1Property,
-                new DoubleAnimation(current.ChartLocation.X - DeltaX, animSpeed));
-            HorizontalLine.BeginAnimation(Line.X2Property,
-                new DoubleAnimation(current.ChartLocation.X, animSpeed));
-            HorizontalLine.BeginAnimation(Line.Y1Property,
-                new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
-            HorizontalLine.BeginAnimation(Line.Y2Property,
-                new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
+                Line2.BeginAnimation(Line.X1Property,
+                    new DoubleAnimation(current.ChartLocation.X - DeltaX, animSpeed));
+                Line2.BeginAnimation(Line.X2Property,
+                    new DoubleAnimation(current.ChartLocation.X - DeltaX, animSpeed));
+                Line2.BeginAnimation(Line.Y1Property,
+                    new DoubleAnimation(current.ChartLocation.Y, animSpeed));
+                Line2.BeginAnimation(Line.Y2Property,
+                    new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
+            }
+            else
+            {
+                Line1.BeginAnimation(Line.X1Property,
+                    new DoubleAnimation(current.ChartLocation.X, animSpeed));
+                Line1.BeginAnimation(Line.X2Property,
+                    new DoubleAnimation(current.ChartLocation.X, animSpeed));
+                Line1.BeginAnimation(Line.Y1Property,
+                    new DoubleAnimation(current.ChartLocation.Y, animSpeed));
+                Line1.BeginAnimation(Line.Y2Property,
+                    new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
+
+                Line2.BeginAnimation(Line.X1Property,
+                    new DoubleAnimation(current.ChartLocation.X - DeltaX, animSpeed));
+                Line2.BeginAnimation(Line.X2Property,
+                    new DoubleAnimation(current.ChartLocation.X, animSpeed));
+                Line2.BeginAnimation(Line.Y1Property,
+                    new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
+                Line2.BeginAnimation(Line.Y2Property,
+                    new DoubleAnimation(current.ChartLocation.Y - DeltaY, animSpeed));
+            }
 
             if (Shape != null)
             {
@@ -146,8 +201,8 @@ namespace LiveCharts.Wpf.Points
             chart.View.RemoveFromDrawMargin(HoverShape);
             chart.View.RemoveFromDrawMargin(Shape);
             chart.View.RemoveFromDrawMargin(DataLabel);
-            chart.View.RemoveFromDrawMargin(VerticalLine);
-            chart.View.RemoveFromDrawMargin(HorizontalLine);
+            chart.View.RemoveFromDrawMargin(Line1);
+            chart.View.RemoveFromDrawMargin(Line2);
         }
 
         public override void OnHover(ChartPoint point)
@@ -162,7 +217,7 @@ namespace LiveCharts.Wpf.Points
             var lineSeries = (StepLineSeries) point.SeriesView;
             if (Shape != null)
                 Shape.Fill = point.Fill == null
-                    ? lineSeries.PointForeround
+                    ? lineSeries.PointForeground
                     : (Brush) point.Fill;
             lineSeries.StrokeThickness = lineSeries.StrokeThickness - 1;
         }

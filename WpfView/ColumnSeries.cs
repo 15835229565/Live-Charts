@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -67,8 +67,11 @@ namespace LiveCharts.Wpf
 
         #region Properties
 
+        /// <summary>
+        /// The maximum column width property
+        /// </summary>
         public static readonly DependencyProperty MaxColumnWidthProperty = DependencyProperty.Register(
-            "MaxColumnWidth", typeof (double), typeof (ColumnSeries), new PropertyMetadata(default(double)));
+            "MaxColumnWidth", typeof (double), typeof (ColumnSeries), new PropertyMetadata(35d));
         /// <summary>
         /// Gets or sets the MaxColumnWidht in pixels, the column width will be capped at this value.
         /// </summary>
@@ -78,8 +81,11 @@ namespace LiveCharts.Wpf
             set { SetValue(MaxColumnWidthProperty, value); }
         }
 
+        /// <summary>
+        /// The column padding property
+        /// </summary>
         public static readonly DependencyProperty ColumnPaddingProperty = DependencyProperty.Register(
-            "ColumnPadding", typeof (double), typeof (ColumnSeries), new PropertyMetadata(default(double)));
+            "ColumnPadding", typeof (double), typeof (ColumnSeries), new PropertyMetadata(2d));
         /// <summary>
         /// Gets or sets the padding between the columns in the series.
         /// </summary>
@@ -89,6 +95,9 @@ namespace LiveCharts.Wpf
             set { SetValue(ColumnPaddingProperty, value); }
         }
 
+        /// <summary>
+        /// The labels position property
+        /// </summary>
         public static readonly DependencyProperty LabelsPositionProperty = DependencyProperty.Register(
             "LabelsPosition", typeof (BarLabelPosition), typeof (ColumnSeries), 
             new PropertyMetadata(default(BarLabelPosition), CallChartUpdater()));
@@ -101,13 +110,33 @@ namespace LiveCharts.Wpf
             set { SetValue(LabelsPositionProperty, value); }
         }
 
+        /// <summary>
+        /// The shares position property
+        /// </summary>
+        public static readonly DependencyProperty SharesPositionProperty = DependencyProperty.Register(
+            "SharesPosition", typeof(bool), typeof(ColumnSeries), new PropertyMetadata(true));
+        /// <summary>
+        /// Gets or sets a value indicating whether this column shares space with all the column series in the same position
+        /// </summary>
+        public bool SharesPosition
+        {
+            get { return (bool) GetValue(SharesPositionProperty); }
+            set { SetValue(SharesPositionProperty, value); }
+        }
+
         #endregion
 
         #region Overridden Methods
 
-        public override IChartPointView GetPointView(IChartPointView view, ChartPoint point, string label)
+        /// <summary>
+        /// Gets the view of a given point
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="label"></param>
+        /// <returns></returns>
+        public override IChartPointView GetPointView(ChartPoint point, string label)
         {
-            var pbv = (ColumnPointView) view;
+            var pbv = (ColumnPointView) point.View;
 
             if (pbv == null)
             {
@@ -157,15 +186,20 @@ namespace LiveCharts.Wpf
 
             if (pbv.HoverShape != null) pbv.HoverShape.Visibility = Visibility;
 
-            if (DataLabels && pbv.DataLabel == null)
+            if (DataLabels)
             {
-                pbv.DataLabel = BindATextBlock(0);
-                Panel.SetZIndex(pbv.DataLabel, int.MaxValue - 1);
-
-                Model.Chart.View.AddToDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = UpdateLabelContent(new DataLabelViewModel
+                {
+                    FormattedText = label,
+                    Point = point
+                }, pbv.DataLabel);
             }
 
-            if (pbv.DataLabel != null) pbv.DataLabel.Text = label;
+            if (!DataLabels && pbv.DataLabel != null)
+            {
+                Model.Chart.View.RemoveFromDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = null;
+            }
 
             if (point.Stroke != null) pbv.Rectangle.Stroke = (Brush)point.Stroke;
             if (point.Fill != null) pbv.Rectangle.Fill = (Brush)point.Fill;

@@ -26,6 +26,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using LiveCharts.Charts;
@@ -62,9 +63,49 @@ namespace LiveCharts.Wpf
 
         #region Events
         /// <summary>
-        /// Happens every time an axis range changes by a user event (zooming or panning)
+        /// Occurs when an axis range changes by an user action (zooming or panning)
         /// </summary>
         public event RangeChangedHandler RangeChanged;
+
+        /// <summary>
+        /// The range changed command property
+        /// </summary>
+        public static readonly DependencyProperty RangeChangedCommandProperty = DependencyProperty.Register(
+            "RangeChangedCommand", typeof(ICommand), typeof(Axis), new PropertyMetadata(default(ICommand)));
+        /// <summary>
+        /// Gets or sets the command to execute when an axis range changes by an user action (zooming or panning)
+        /// </summary>
+        /// <value>
+        /// The range changed command.
+        /// </value>
+        public ICommand RangeChangedCommand
+        {
+            get { return (ICommand) GetValue(RangeChangedCommandProperty); }
+            set { SetValue(RangeChangedCommandProperty, value); }
+        }
+
+        /// <summary>
+        /// Occurs before an axis range changes by an user action (zooming or panning)
+        /// </summary>
+        public event PreviewRangeChangedHandler PreviewRangeChanged;
+
+        /// <summary>
+        /// The preview range changed command property
+        /// </summary>
+        public static readonly DependencyProperty PreviewRangeChangedCommandProperty = DependencyProperty.Register(
+            "PreviewRangeChangedCommand", typeof(ICommand), typeof(Axis), new PropertyMetadata(default(ICommand)));
+        /// <summary>
+        /// Gets or sets the command to execute before an axis range changes by an user action (zooming or panning)
+        /// </summary>
+        /// <value>
+        /// The preview range changed command.
+        /// </value>
+        public ICommand PreviewRangeChangedCommand
+        {
+            get { return (ICommand) GetValue(PreviewRangeChangedCommandProperty); }
+            set { SetValue(PreviewRangeChangedCommandProperty, value); }
+        }
+
         #endregion
 
         #region properties
@@ -86,6 +127,9 @@ namespace LiveCharts.Wpf
 
         #region Dependency Properties
 
+        /// <summary>
+        /// The labels property
+        /// </summary>
         public static readonly DependencyProperty LabelsProperty = DependencyProperty.Register(
             "Labels", typeof (IList<string>), typeof (Axis), 
             new PropertyMetadata(default(IList<string>), UpdateChart()));
@@ -95,10 +139,13 @@ namespace LiveCharts.Wpf
         [TypeConverter(typeof(StringCollectionConverter))]
         public IList<string> Labels
         {
-            get { return (IList<string>) GetValue(LabelsProperty); }
+            get { return ThreadAccess.Resolve<IList<string>>(this, LabelsProperty); }
             set { SetValue(LabelsProperty, value); }
         }
 
+        /// <summary>
+        /// The sections property
+        /// </summary>
         public static readonly DependencyProperty SectionsProperty = DependencyProperty.Register(
             "Sections", typeof (SectionsCollection), typeof (Axis), new PropertyMetadata(default(SectionsCollection)));
         /// <summary>
@@ -110,6 +157,9 @@ namespace LiveCharts.Wpf
             set { SetValue(SectionsProperty, value); }
         }
 
+        /// <summary>
+        /// The label formatter property
+        /// </summary>
         public static readonly DependencyProperty LabelFormatterProperty = DependencyProperty.Register(
             "LabelFormatter", typeof (Func<double, string>), typeof (Axis),
             new PropertyMetadata(default(Func<double, string>), UpdateChart()));
@@ -122,18 +172,23 @@ namespace LiveCharts.Wpf
             set { SetValue(LabelFormatterProperty, value); }
         }
 
+        /// <summary>
+        /// The separator property
+        /// </summary>
         public static readonly DependencyProperty SeparatorProperty = DependencyProperty.Register(
-            "Separator", typeof (ISeparatorView), typeof (Axis),
-            new PropertyMetadata(default(ISeparatorView), UpdateChart()));
+            "Separator", typeof (Separator), typeof (Axis),
+            new PropertyMetadata(default(Separator), UpdateChart()));
         /// <summary>
         /// Get or sets configuration for parallel lines to axis.
         /// </summary>
-        public ISeparatorView Separator
+        public Separator Separator
         {
-            get { return (ISeparatorView) GetValue(SeparatorProperty); }
+            get { return (Separator) GetValue(SeparatorProperty); }
             set { SetValue(SeparatorProperty, value); }
         }
-
+        /// <summary>
+        /// The show labels property
+        /// </summary>
         public static readonly DependencyProperty ShowLabelsProperty = DependencyProperty.Register(
             "ShowLabels", typeof (bool), typeof (Axis), 
             new PropertyMetadata(default(bool), LabelsVisibilityChanged));
@@ -146,32 +201,63 @@ namespace LiveCharts.Wpf
             set { SetValue(ShowLabelsProperty, value); }
         }
 
-        public static readonly DependencyProperty MaxValueProperty = DependencyProperty.Register(
-            "MaxValue", typeof (double?), typeof (Axis), 
-            new PropertyMetadata(default(double?), UpdateChart()));
         /// <summary>
-        /// Gets or sets axis max value, set it to null to make this property Auto, default value is null
+        /// The maximum value property
         /// </summary>
-        public double? MaxValue
+        public static readonly DependencyProperty MaxValueProperty = DependencyProperty.Register(
+            "MaxValue", typeof (double), typeof (Axis), 
+            new PropertyMetadata(double.NaN, UpdateChart()));
+        /// <summary>
+        /// Gets or sets axis max value, set it to double.NaN to make this property Auto, default value is double.NaN
+        /// </summary>
+        public double MaxValue
         {
-            get { return (double?) GetValue(MaxValueProperty); }
+            get { return (double) GetValue(MaxValueProperty); }
             set { SetValue(MaxValueProperty, value); }
         }
 
-        public static readonly DependencyProperty MinValueProperty = DependencyProperty.Register(
-            "MinValue", typeof (double?), typeof (Axis),
-            new PropertyMetadata(null, UpdateChart()));
         /// <summary>
-        /// Gets or sets axis min value, set it to null to make this property Auto, default value is null
+        /// The minimum value property
         /// </summary>
-        public double? MinValue
+        public static readonly DependencyProperty MinValueProperty = DependencyProperty.Register(
+            "MinValue", typeof (double), typeof (Axis),
+            new PropertyMetadata(double.NaN, UpdateChart()));
+        /// <summary>
+        /// Gets or sets axis min value, set it to double.NaN to make this property Auto, default value is double.NaN
+        /// </summary>
+        public double MinValue
         {
-            get { return (double?)GetValue(MinValueProperty); }
+            get { return (double)GetValue(MinValueProperty); }
             set { SetValue(MinValueProperty, value); }
         }
 
+        /// <summary>
+        /// Gets the actual minimum value.
+        /// </summary>
+        /// <value>
+        /// The actual minimum value.
+        /// </value>
+        public double ActualMinValue
+        {
+            get { return Model.BotLimit; }
+        }
+
+        /// <summary>
+        /// Gets the actual maximum value.
+        /// </summary>
+        /// <value>
+        /// The actual maximum value.
+        /// </value>
+        public double ActualMaxValue
+        {
+            get { return Model.TopLimit; }
+        }
+
+        /// <summary>
+        /// The maximum range property
+        /// </summary>
         public static readonly DependencyProperty MaxRangeProperty = DependencyProperty.Register(
-            "MaxRange", typeof(double?), typeof(Axis), new PropertyMetadata(double.MaxValue));
+            "MaxRange", typeof(double), typeof(Axis), new PropertyMetadata(double.MaxValue));
         /// <summary>
         /// Gets or sets the max range this axis can display, useful to limit user zooming.
         /// </summary>
@@ -181,6 +267,9 @@ namespace LiveCharts.Wpf
             set { SetValue(MaxRangeProperty, value); }
         }
 
+        /// <summary>
+        /// The minimum range property
+        /// </summary>
         public static readonly DependencyProperty MinRangeProperty = DependencyProperty.Register(
             "MinRange", typeof(double), typeof(Axis), new PropertyMetadata(double.MinValue));
         /// <summary>
@@ -192,7 +281,9 @@ namespace LiveCharts.Wpf
             set { SetValue(MinRangeProperty, value); }
         }
 
-
+        /// <summary>
+        /// The title property
+        /// </summary>
         public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
             "Title", typeof(string), typeof(Axis), 
             new PropertyMetadata(null, UpdateChart()));
@@ -205,6 +296,9 @@ namespace LiveCharts.Wpf
             set { SetValue(TitleProperty, value); }
         }
 
+        /// <summary>
+        /// The position property
+        /// </summary>
         public static readonly DependencyProperty PositionProperty = DependencyProperty.Register(
             "Position", typeof (AxisPosition), typeof (Axis), 
             new PropertyMetadata(default(AxisPosition), UpdateChart()));
@@ -217,6 +311,9 @@ namespace LiveCharts.Wpf
             set { SetValue(PositionProperty, value); }
         }
 
+        /// <summary>
+        /// The is merged property
+        /// </summary>
         public static readonly DependencyProperty IsMergedProperty = DependencyProperty.Register(
             "IsMerged", typeof (bool), typeof (Axis), 
             new PropertyMetadata(default(bool), UpdateChart()));
@@ -229,6 +326,9 @@ namespace LiveCharts.Wpf
             set { SetValue(IsMergedProperty, value); }
         }
 
+        /// <summary>
+        /// The disable animations property
+        /// </summary>
         public static readonly DependencyProperty DisableAnimationsProperty = DependencyProperty.Register(
             "DisableAnimations", typeof (bool), typeof (Axis), new PropertyMetadata(default(bool), UpdateChart(true)));
         /// <summary>
@@ -240,6 +340,9 @@ namespace LiveCharts.Wpf
             set { SetValue(DisableAnimationsProperty, value); }
         }
 
+        /// <summary>
+        /// The font family property
+        /// </summary>
         public static readonly DependencyProperty FontFamilyProperty =
             DependencyProperty.Register("FontFamily", typeof(FontFamily), typeof(Axis),
                 new PropertyMetadata(new FontFamily("Calibri")));
@@ -253,6 +356,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontFamilyProperty, value); }
         }
 
+        /// <summary>
+        /// The font size property
+        /// </summary>
         public static readonly DependencyProperty FontSizeProperty =
             DependencyProperty.Register("FontSize", typeof(double), typeof(Axis), new PropertyMetadata(11.0));
         /// <summary>
@@ -264,6 +370,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontSizeProperty, value); }
         }
 
+        /// <summary>
+        /// The font weight property
+        /// </summary>
         public static readonly DependencyProperty FontWeightProperty =
             DependencyProperty.Register("FontWeight", typeof(FontWeight), typeof(Axis),
                 new PropertyMetadata(FontWeights.Normal));
@@ -276,6 +385,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontWeightProperty, value); }
         }
 
+        /// <summary>
+        /// The font style property
+        /// </summary>
         public static readonly DependencyProperty FontStyleProperty =
             DependencyProperty.Register("FontStyle", typeof(FontStyle), typeof(Axis),
                 new PropertyMetadata(FontStyles.Normal));
@@ -289,6 +401,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontStyleProperty, value); }
         }
 
+        /// <summary>
+        /// The font stretch property
+        /// </summary>
         public static readonly DependencyProperty FontStretchProperty =
             DependencyProperty.Register("FontStretch", typeof(FontStretch), typeof(Axis),
                 new PropertyMetadata(FontStretches.Normal));
@@ -302,6 +417,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontStretchProperty, value); }
         }
 
+        /// <summary>
+        /// The foreground property
+        /// </summary>
         public static readonly DependencyProperty ForegroundProperty =
             DependencyProperty.Register("Foreground", typeof(Brush), typeof(Axis),
                 new PropertyMetadata(null));
@@ -315,6 +433,9 @@ namespace LiveCharts.Wpf
             set { SetValue(ForegroundProperty, value); }
         }
 
+        /// <summary>
+        /// The labels rotation property
+        /// </summary>
         public static readonly DependencyProperty LabelsRotationProperty = DependencyProperty.Register(
             "LabelsRotation", typeof (double), typeof (Axis), new PropertyMetadata(default(double), UpdateChart()));
         /// <summary>
@@ -326,29 +447,73 @@ namespace LiveCharts.Wpf
             set { SetValue(LabelsRotationProperty, value); }
         }
 
+        /// <summary>
+        /// The bar unit property
+        /// </summary>
         public static readonly DependencyProperty BarUnitProperty = DependencyProperty.Register(
-            "BarUnit", typeof(double), typeof(Axis), new PropertyMetadata(1d));
+            "BarUnit", typeof(double), typeof(Axis), new PropertyMetadata(double.NaN));
         /// <summary>
         /// Gets or sets the bar's series unit width (rows and columns), this property specifies the value in the chart that any bar should take as width.
         /// </summary>
+        [Obsolete("PThis property was renamed, please use Unit property instead.")]
         public double BarUnit
         {
             get { return (double) GetValue(BarUnitProperty); }
             set { SetValue(BarUnitProperty, value); }
         }
 
+        /// <summary>
+        /// The unit property
+        /// </summary>
+        public static readonly DependencyProperty UnitProperty = DependencyProperty.Register(
+            "Unit", typeof(double), typeof(Axis), new PropertyMetadata(double.NaN));
+        /// <summary>
+        /// Gets or sets the axis unit, setting this property to your actual scale unit (seconds, minutes or any other scale) helps you to fix possible visual issues.
+        /// </summary>
+        /// <value>
+        /// The unit.
+        /// </value>
+        public double Unit
+        {
+            get { return (double) GetValue(UnitProperty); }
+            set { SetValue(UnitProperty, value); }
+        }
+
+        /// <summary>
+        /// The axis orientation property
+        /// </summary>
+        public static readonly DependencyProperty AxisOrientationProperty = DependencyProperty.Register(
+            "AxisOrientation", typeof(AxisOrientation), typeof(Axis), new PropertyMetadata(default(AxisOrientation)));
+        /// <summary>
+        /// Gets or sets the element orientation ind the axis
+        /// </summary>
+        public AxisOrientation AxisOrientation
+        {
+            get { return (AxisOrientation) GetValue(AxisOrientationProperty); }
+            internal set { SetValue(AxisOrientationProperty, value); }
+        }
+
         #endregion
 
         #region Public Methods
+        ///<summary>
+        /// Cleans this instance.
+        /// </summary>
         public void Clean()
         {
+            if (Model == null) return;
             Model.ClearSeparators();
             Model.Chart.View.RemoveFromView(TitleBlock);
             Sections.Clear();
             TitleBlock = null;
         }
 
-        public void RenderSeparator(SeparatorElementCore model, ChartCore chart)
+        /// <summary>
+        /// Renders the separator.
+        /// </summary>
+        /// <param name="model">The model.</param>
+        /// <param name="chart">The chart.</param>
+        public virtual void RenderSeparator(SeparatorElementCore model, ChartCore chart)
         {
             AxisSeparatorElement ase;
 
@@ -370,12 +535,16 @@ namespace LiveCharts.Wpf
                 ase = (AxisSeparatorElement) model.View;
             }
 
-            if (!Separator.IsEnabled)
-                ase.Line.Visibility = Visibility.Collapsed;
-            if (!ShowLabels)
-                ase.TextBlock.Visibility = Visibility.Collapsed;
+            ase.Line.Visibility = !Separator.IsEnabled ? Visibility.Collapsed : Visibility.Visible;
+            ase.TextBlock.Visibility = !ShowLabels ? Visibility.Collapsed : Visibility.Visible;
         }
 
+        /// <summary>
+        /// Updates the title.
+        /// </summary>
+        /// <param name="chart">The chart.</param>
+        /// <param name="rotationAngle">The rotation angle.</param>
+        /// <returns></returns>
         public CoreSize UpdateTitle(ChartCore chart, double rotationAngle = 0)
         {
             if (TitleBlock.Parent == null)
@@ -398,32 +567,58 @@ namespace LiveCharts.Wpf
                 : new CoreSize(TitleBlock.Width, FormattedTitle.Height);
         }
 
+        /// <summary>
+        /// Sets the title top.
+        /// </summary>
+        /// <param name="value">The value.</param>
         public void SetTitleTop(double value)
         {
             Canvas.SetTop(TitleBlock, value);
         }
 
+        /// <summary>
+        /// Sets the title left.
+        /// </summary>
+        /// <param name="value">The value.</param>
         public void SetTitleLeft(double value)
         {
             Canvas.SetLeft(TitleBlock, value);
         }
 
+        /// <summary>
+        /// Gets the title left.
+        /// </summary>
+        /// <returns></returns>
         public double GetTitleLeft()
         {
             return Canvas.GetLeft(TitleBlock);
         }
 
+        /// <summary>
+        /// Gets the tile top.
+        /// </summary>
+        /// <returns></returns>
         public double GetTileTop()
         {
             return Canvas.GetTop(TitleBlock);
         }
 
+        /// <summary>
+        /// Gets the size of the label.
+        /// </summary>
+        /// <returns></returns>
         public CoreSize GetLabelSize()
         {
             return new CoreSize(FormattedTitle.Width, FormattedTitle.Height);
         }
 
-        public AxisCore AsCoreElement(ChartCore chart, AxisOrientation source)
+        /// <summary>
+        /// Ases the core element.
+        /// </summary>
+        /// <param name="chart">The chart.</param>
+        /// <param name="source">The source.</param>
+        /// <returns></returns>
+        public virtual AxisCore AsCoreElement(ChartCore chart, AxisOrientation source)
         {
             if (Model == null) Model = new AxisCore(this);
 
@@ -436,30 +631,49 @@ namespace LiveCharts.Wpf
             Model.MinValue = MinValue;
             Model.Title = Title;
             Model.Position = Position;
-            Model.Separator = Separator.AsCoreElement(Model);
+            Model.Separator = Separator.AsCoreElement(Model, source);
             Model.DisableAnimations = DisableAnimations;
             Model.Sections = Sections.Select(x => x.AsCoreElement(Model, source)).ToList();
 
             return Model;
         }
 
-        public void SetRange(double? min, double? max)
+        /// <summary>
+        /// Sets the range.
+        /// </summary>
+        /// <param name="min">The minimum.</param>
+        /// <param name="max">The maximum.</param>
+        public void SetRange(double min, double max)
         {
-            var bMax = MaxValue ?? Model.TopLimit;
-            var bMin = MinValue ?? Model.BotLimit;
+            var bMax = double.IsNaN(MaxValue) ? Model.TopLimit : MaxValue;
+            var bMin = double.IsNaN(MinValue) ? Model.BotLimit : MinValue;
+
+            var nMax = double.IsNaN(MaxValue) ? Model.TopLimit : MaxValue;
+            var nMin = double.IsNaN(MinValue) ? Model.BotLimit : MinValue;
+
+            var e = new RangeChangedEventArgs
+            {
+                Range = nMax - nMin,
+                RightLimitChange = bMax - nMax,
+                LeftLimitChange = bMin - nMin,
+                Axis = this
+            };
+
+            var pe = new PreviewRangeChangedEventArgs(e)
+            {
+                PreviewMaxValue = max,
+                PreviewMinValue = min
+            };
+            OnPreviewRangeChanged(pe);
+
+            if (pe.Cancel) return;
 
             MaxValue = max;
             MinValue = min;
 
-            Model.Chart.Updater.Run(false, true);
+            Model.Chart.Updater.Run();
 
-            OnRangeChanged(new RangeChangedEventArgs
-            {
-                Range = (MaxValue ?? Model.TopLimit) - (MinValue ?? Model.BotLimit),
-                RightLimitChange = bMax - (MaxValue ?? Model.TopLimit),
-                LeftLimitChange = bMin - (MinValue ?? Model.BotLimit),
-                Axis = this
-            });
+            OnRangeChanged(e);
         }
 
         #endregion
@@ -503,7 +717,13 @@ namespace LiveCharts.Wpf
             return l;
         }
 
-        private static PropertyChangedCallback UpdateChart(bool animate = false, bool updateNow = false)
+        /// <summary>
+        /// Updates the chart.
+        /// </summary>
+        /// <param name="animate">if set to <c>true</c> [animate].</param>
+        /// <param name="updateNow">if set to <c>true</c> [update now].</param>
+        /// <returns></returns>
+        protected static PropertyChangedCallback UpdateChart(bool animate = false, bool updateNow = false)
         {
             return (o, args) =>
             {
@@ -531,9 +751,28 @@ namespace LiveCharts.Wpf
             UpdateChart()(dependencyObject, dependencyPropertyChangedEventArgs);
         }
 
+        /// <summary>
+        /// Raises the <see cref="E:RangeChanged" /> event.
+        /// </summary>
+        /// <param name="e">The <see cref="RangeChangedEventArgs"/> instance containing the event data.</param>
         protected void OnRangeChanged(RangeChangedEventArgs e)
         {
-            if (RangeChanged != null) RangeChanged.Invoke(e);
+            if (RangeChanged != null)
+                RangeChanged.Invoke(e);
+            if (RangeChangedCommand != null && RangeChangedCommand.CanExecute(e))
+                RangeChangedCommand.Execute(e);
+        }
+
+        /// <summary>
+        /// Raises the <see cref="E:PreviewRangeChanged" /> event.
+        /// </summary>
+        /// <param name="e">The <see cref="PreviewRangeChangedEventArgs"/> instance containing the event data.</param>
+        protected void OnPreviewRangeChanged(PreviewRangeChangedEventArgs e)
+        {
+            if (PreviewRangeChanged != null)
+                PreviewRangeChanged.Invoke(e);
+            if (PreviewRangeChangedCommand != null && PreviewRangeChangedCommand.CanExecute(e))
+                PreviewRangeChangedCommand.Execute(e);
         }
     }
 }

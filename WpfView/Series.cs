@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ using LiveCharts.Definitions.Points;
 using LiveCharts.Definitions.Series;
 using LiveCharts.Helpers;
 using LiveCharts.Wpf.Charts.Base;
+using LiveCharts.Wpf.Components;
 using LiveCharts.Wpf.Converters;
 
 namespace LiveCharts.Wpf
@@ -50,6 +51,7 @@ namespace LiveCharts.Wpf
             DefaultFillOpacity = 0.35;
             SetCurrentValue(TitleProperty, "Series");
             IsVisibleChanged += OnIsVisibleChanged;
+            IsFirstDraw = true;
         }
 
         /// <summary>
@@ -61,6 +63,12 @@ namespace LiveCharts.Wpf
             Configuration = configuration;
             SetValue(TitleProperty, "Series");
             IsVisibleChanged += OnIsVisibleChanged;
+            IsFirstDraw = true;
+        }
+
+        static Series()
+        {
+            VisibilityProperty.OverrideMetadata(typeof(Series), new PropertyMetadata(Visibility.Visible, OnIsVisibleChanged));
         }
         #endregion
 
@@ -68,6 +76,13 @@ namespace LiveCharts.Wpf
 
         private IChartValues LastKnownValues { get; set; }
         internal double DefaultFillOpacity { get; set; }
+        /// <summary>
+        /// Gets a value indicating whether this instance is first draw.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is first draw; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsFirstDraw { get; internal set; }
         /// <summary>
         /// THe Model is set by every series type, it is the motor of the series, it is the communication with the core of the library
         /// </summary>
@@ -101,20 +116,27 @@ namespace LiveCharts.Wpf
         {
             get { return ActualValues.GetPoints(this); }
         }
-        
+
+        /// <summary>
+        /// The values property
+        /// </summary>
         public static readonly DependencyProperty ValuesProperty = DependencyProperty.Register(
             "Values", typeof (IChartValues), typeof (Series),
             new PropertyMetadata(default(IChartValues), OnValuesInstanceChanged));
+
         /// <summary>
         /// Gets or sets chart values.
         /// </summary>
         [TypeConverter(typeof(NumericChartValuesConverter))]
         public IChartValues Values
         {
-            get { return (IChartValues) GetValue(ValuesProperty); }
+            get { return ThreadAccess.Resolve<IChartValues>(this, ValuesProperty); }
             set { SetValue(ValuesProperty, value); }
         }
 
+        /// <summary>
+        /// The title property
+        /// </summary>
         public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
             "Title", typeof (string), typeof (Series),
             new PropertyMetadata(default(string), CallChartUpdater()));
@@ -127,6 +149,9 @@ namespace LiveCharts.Wpf
             set { SetValue(TitleProperty, value); }
         }
 
+        /// <summary>
+        /// The stroke property
+        /// </summary>
         public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register(
             "Stroke", typeof (Brush), typeof (Series), 
             new PropertyMetadata(default(Brush), CallChartUpdater()));
@@ -139,6 +164,9 @@ namespace LiveCharts.Wpf
             set { SetValue(StrokeProperty, value); }
         }
 
+        /// <summary>
+        /// The stroke thickness property
+        /// </summary>
         public static readonly DependencyProperty StrokeThicknessProperty = DependencyProperty.Register(
             "StrokeThickness", typeof (double), typeof (Series), 
             new PropertyMetadata(default(double), CallChartUpdater()));
@@ -151,6 +179,9 @@ namespace LiveCharts.Wpf
             set { SetValue(StrokeThicknessProperty, value); }
         }
 
+        /// <summary>
+        /// The fill property
+        /// </summary>
         public static readonly DependencyProperty FillProperty = DependencyProperty.Register(
             "Fill", typeof (Brush), typeof (Series), 
             new PropertyMetadata(default(Brush), CallChartUpdater()));
@@ -163,6 +194,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FillProperty, value); }
         }
 
+        /// <summary>
+        /// The data labels property
+        /// </summary>
         public static readonly DependencyProperty DataLabelsProperty = DependencyProperty.Register(
             "DataLabels", typeof (bool), typeof (Series), 
             new PropertyMetadata(default(bool), CallChartUpdater()));
@@ -175,9 +209,30 @@ namespace LiveCharts.Wpf
             set { SetValue(DataLabelsProperty, value); }
         }
 
+        /// <summary>
+        /// The labels template property
+        /// </summary>
+        public static readonly DependencyProperty DataLabelsTemplateProperty = DependencyProperty.Register(
+            "DataLabelsTemplate", typeof(DataTemplate), typeof(Series),
+            new PropertyMetadata(DefaultXamlReader.DataLabelTemplate(), CallChartUpdater()));
+        /// <summary>
+        /// Gets or sets the labels template.
+        /// </summary>
+        /// <value>
+        /// The labels template.
+        /// </value>
+        public DataTemplate DataLabelsTemplate
+        {
+            get { return (DataTemplate) GetValue(DataLabelsTemplateProperty); }
+            set { SetValue(DataLabelsTemplateProperty, value); }
+        }
+
+        /// <summary>
+        /// The font family property
+        /// </summary>
         public static readonly DependencyProperty FontFamilyProperty = DependencyProperty.Register(
             "FontFamily", typeof (FontFamily), typeof (Series), 
-            new PropertyMetadata(default(FontFamily)));
+            new PropertyMetadata(new FontFamily("Segoe UI")));
         /// <summary>
         /// Gets or sets labels font family
         /// </summary>
@@ -187,6 +242,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontFamilyProperty, value); }
         }
 
+        /// <summary>
+        /// The font size property
+        /// </summary>
         public static readonly DependencyProperty FontSizeProperty = DependencyProperty.Register(
             "FontSize", typeof (double),
             typeof (Series), new PropertyMetadata(10d, CallChartUpdater()));
@@ -199,6 +257,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontSizeProperty, value); }
         }
 
+        /// <summary>
+        /// The font weight property
+        /// </summary>
         public static readonly DependencyProperty FontWeightProperty = DependencyProperty.Register(
             "FontWeight", typeof (FontWeight), typeof (Series),
             new PropertyMetadata(FontWeights.Bold, CallChartUpdater()));
@@ -211,6 +272,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontWeightProperty, value); }
         }
 
+        /// <summary>
+        /// The font style property
+        /// </summary>
         public static readonly DependencyProperty FontStyleProperty = DependencyProperty.Register(
             "FontStyle", typeof (FontStyle),
             typeof (Series), new PropertyMetadata(FontStyles.Normal, CallChartUpdater()));
@@ -223,6 +287,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontStyleProperty, value); }
         }
 
+        /// <summary>
+        /// The font stretch property
+        /// </summary>
         public static readonly DependencyProperty FontStretchProperty = DependencyProperty.Register(
             "FontStretch", typeof (FontStretch),
             typeof (Series), new PropertyMetadata(FontStretches.Normal, CallChartUpdater()));
@@ -235,6 +302,9 @@ namespace LiveCharts.Wpf
             set { SetValue(FontStretchProperty, value); }
         }
 
+        /// <summary>
+        /// The foreground property
+        /// </summary>
         public static readonly DependencyProperty ForegroundProperty = DependencyProperty.Register(
             "Foreground", typeof (Brush),
             typeof (Series), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(55, 71, 79))));
@@ -247,6 +317,9 @@ namespace LiveCharts.Wpf
             set { SetValue(ForegroundProperty, value); }
         }
 
+        /// <summary>
+        /// The stroke dash array property
+        /// </summary>
         public static readonly DependencyProperty StrokeDashArrayProperty = DependencyProperty.Register(
             "StrokeDashArray", typeof(DoubleCollection), typeof(Series), 
             new PropertyMetadata(default(DoubleCollection)));
@@ -259,6 +332,9 @@ namespace LiveCharts.Wpf
             set { SetValue(StrokeDashArrayProperty, value); }
         }
 
+        /// <summary>
+        /// The point geometry property
+        /// </summary>
         public static readonly DependencyProperty PointGeometryProperty =
             DependencyProperty.Register("PointGeometry", typeof (Geometry), typeof (Series),
                 new PropertyMetadata(DefaultGeometries.Circle, CallChartUpdater()));
@@ -271,6 +347,9 @@ namespace LiveCharts.Wpf
             set { SetValue(PointGeometryProperty, value); }
         }
 
+        /// <summary>
+        /// The scales x at property
+        /// </summary>
         public static readonly DependencyProperty ScalesXAtProperty = DependencyProperty.Register(
             "ScalesXAt", typeof (int), typeof (Series), new PropertyMetadata(default(int), CallChartUpdater()));
         /// <summary>
@@ -282,6 +361,9 @@ namespace LiveCharts.Wpf
             set { SetValue(ScalesXAtProperty, value); }
         }
 
+        /// <summary>
+        /// The scales y at property
+        /// </summary>
         public static readonly DependencyProperty ScalesYAtProperty = DependencyProperty.Register(
             "ScalesYAt", typeof (int), typeof (Series), new PropertyMetadata(default(int), CallChartUpdater()));
         /// <summary>
@@ -293,6 +375,9 @@ namespace LiveCharts.Wpf
             set { SetValue(ScalesYAtProperty, value); }
         }
 
+        /// <summary>
+        /// The label point property
+        /// </summary>
         public static readonly DependencyProperty LabelPointProperty = DependencyProperty.Register(
             "LabelPoint", typeof (Func<ChartPoint, string>), typeof (Series), new PropertyMetadata(default(Func<ChartPoint, string>)));
         /// <summary>
@@ -304,6 +389,9 @@ namespace LiveCharts.Wpf
             set { SetValue(LabelPointProperty, value); }
         }
 
+        /// <summary>
+        /// The configuration property
+        /// </summary>
         public static readonly DependencyProperty ConfigurationProperty = DependencyProperty.Register(
             "Configuration", typeof (object), typeof (Series), 
             new PropertyMetadata(default(object), CallChartUpdater()));
@@ -320,25 +408,34 @@ namespace LiveCharts.Wpf
 
         #region Internal Helpers
 
-        internal TextBlock BindATextBlock(int rotate)
+        internal ContentControl UpdateLabelContent(DataLabelViewModel content, ContentControl currentControl)
         {
-            var tb = new TextBlock();
+            ContentControl control;
 
-            tb.SetBinding(TextBlock.FontFamilyProperty,
-                new Binding {Path = new PropertyPath(FontFamilyProperty), Source = this});
-            tb.SetBinding(TextBlock.FontSizeProperty,
-                new Binding {Path = new PropertyPath(FontSizeProperty), Source = this});
-            tb.SetBinding(TextBlock.FontStretchProperty,
-                new Binding {Path = new PropertyPath(FontStretchProperty), Source = this});
-            tb.SetBinding(TextBlock.FontStyleProperty,
-                new Binding {Path = new PropertyPath(FontStyleProperty), Source = this});
-            tb.SetBinding(TextBlock.FontWeightProperty,
-                new Binding {Path = new PropertyPath(FontWeightProperty), Source = this});
-            tb.SetBinding(TextBlock.ForegroundProperty,
-                new Binding {Path = new PropertyPath(ForegroundProperty), Source = this});
-            tb.SetBinding(TextBlock.VisibilityProperty,
-                new Binding {Path = new PropertyPath(VisibilityProperty), Source = this});
-            return tb;
+            if (currentControl == null)
+            {
+                control = new ContentControl();
+                control.SetBinding(VisibilityProperty,
+                    new Binding {Path = new PropertyPath(VisibilityProperty), Source = this});
+                Panel.SetZIndex(control, int.MaxValue - 1);
+
+                Model.Chart.View.AddToDrawMargin(control);
+            }
+            else
+            {
+                control = currentControl;
+            }
+
+            control.Content = content;
+            control.ContentTemplate = DataLabelsTemplate;
+            control.FontFamily = FontFamily;
+            control.FontSize = FontSize;
+            control.FontStretch = FontStretch;
+            control.FontStyle = FontStyle;
+            control.FontWeight = FontWeight;
+            control.Foreground = Foreground;
+
+            return control;
         }
 
         #endregion
@@ -348,11 +445,10 @@ namespace LiveCharts.Wpf
         /// <summary>
         /// Gets the view of a given point
         /// </summary>
-        /// <param name="view"></param>
         /// <param name="point"></param>
         /// <param name="label"></param>
         /// <returns></returns>
-        public virtual IChartPointView GetPointView(IChartPointView view, ChartPoint point, string label)
+        public virtual IChartPointView GetPointView(ChartPoint point, string label)
         {
             throw new NotImplementedException();
         }
@@ -382,6 +478,7 @@ namespace LiveCharts.Wpf
         /// </summary>
         public virtual void OnSeriesUpdatedFinish()
         {
+            IsFirstDraw = false;
         }
 
         /// <summary>
@@ -427,6 +524,10 @@ namespace LiveCharts.Wpf
 
         }
 
+        /// <summary>
+        /// Gets the label point formatter.
+        /// </summary>
+        /// <returns></returns>
         public Func<ChartPoint, string> GetLabelPointFormatter()
         {
             if (DesignerProperties.GetIsInDesignMode(this))
@@ -450,6 +551,11 @@ namespace LiveCharts.Wpf
             series.LastKnownValues = series.Values;
         }
 
+        /// <summary>
+        /// Calls the chart updater.
+        /// </summary>
+        /// <param name="animate">if set to <c>true</c> [animate].</param>
+        /// <returns></returns>
         protected static PropertyChangedCallback CallChartUpdater(bool animate = false)
         {
             return (o, args) =>
@@ -462,21 +568,16 @@ namespace LiveCharts.Wpf
                 if (wpfSeries.Model.Chart != null) wpfSeries.Model.Chart.Updater.Run(animate);
             };
         }
-
-        private Visibility? PreviousVisibility { get; set; }
-       
-        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        
+        private static void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (Model.Chart == null || PreviousVisibility == Visibility) return;
+             var series = (Series) sender;
 
-            PreviousVisibility = Visibility;
+            if (series.Visibility == Visibility.Collapsed || series.Visibility == Visibility.Hidden)
+                series.Erase(false);
 
-            if (PreviousVisibility != null) Model.Chart.Updater.Run(false, false);
-
-            if (Visibility == Visibility.Collapsed || Visibility == Visibility.Hidden)
-            {
-                Erase(false);
-            }
+            if (series.Model == null) return;
+            series.Model.Chart.Updater.Run();
         }
 
         private static IChartValues GetValuesForDesigner()

@@ -1,10 +1,15 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using LiveCharts.Definitions.Series;
 using LiveCharts.Dtos;
 using LiveCharts.Wpf.Charts.Base;
 
 namespace LiveCharts.Wpf
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public static class Extentions
     {
         /// <summary>
@@ -21,10 +26,10 @@ namespace LiveCharts.Wpf
 
             var uw = new CorePoint(
                 chart.AxisX[axisX].Model.EvaluatesUnitWidth
-                    ? ChartFunctions.GetUnitWidth(AxisOrientation.X, chart.Model, axisX)/2
+                    ? ChartFunctions.GetUnitWidth(AxisOrientation.X, chart.Model, axisX) / 2
                     : 0,
                 chart.AxisY[axisY].Model.EvaluatesUnitWidth
-                    ? ChartFunctions.GetUnitWidth(AxisOrientation.Y, chart.Model, axisY)/2
+                    ? ChartFunctions.GetUnitWidth(AxisOrientation.Y, chart.Model, axisY) / 2
                     : 0);
 
             return new Point(

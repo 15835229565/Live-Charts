@@ -6,7 +6,10 @@ using Winforms.Cartesian.Customized_Series;
 using Winforms.Cartesian.DataPagination;
 using Winforms.Cartesian.DateTime;
 using Winforms.Cartesian.DynamicVisibility;
+using Winforms.Cartesian.Events;
 using Winforms.Cartesian.FullyResponsive;
+using Winforms.Cartesian.Funnel_Chart;
+using Winforms.Cartesian.GanttChart;
 using Winforms.Cartesian.HeatSeriesExample;
 using Winforms.Cartesian.Inverted_Series;
 using Winforms.Cartesian.Irregular_Intervals;
@@ -22,7 +25,6 @@ using Winforms.Cartesian.StepLine;
 using Winforms.Cartesian.UielementsExample;
 using Winforms.Cartesian.Zooming_and_Panning;
 using Winforms.Gauge.AngularGauge;
-using Winforms.Gauge._180;
 using Winforms.Gauge._360;
 using Winforms.Maps;
 using Winforms.PieChart;
@@ -101,11 +103,6 @@ namespace Winforms
             new LogarithmSacale().ShowDialog();
         }
 
-        private void btnGauge_Click(object sender, EventArgs e)
-        {
-            new Gauge180Example().ShowDialog();
-        }
-
         private void button1_Click(object sender, EventArgs e)
         {
             new ConstantChanges().ShowDialog();
@@ -169,6 +166,21 @@ namespace Winforms
         private void button13_Click(object sender, EventArgs e)
         {
             new StepLineExample().ShowDialog();
+        }
+
+        private void button14_Click(object sender, EventArgs e)
+        {
+            new GanttExample().ShowDialog();
+        }
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+            new FunnelExample().ShowDialog();
+        }
+
+        private void button16_Click(object sender, EventArgs e)
+        {
+            new EventsExample().ShowDialog();
         }
     }
 }

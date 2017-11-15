@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
@@ -45,12 +44,12 @@ namespace LiveCharts.Wpf.Points
 
                 Shape.Width = 0;
                 Shape.Height = 0;
+            }
 
-                if (DataLabel != null)
-                {
-                    Canvas.SetTop(DataLabel, current.ChartLocation.Y);
-                    Canvas.SetLeft(DataLabel, current.ChartLocation.X);
-                }
+            if (DataLabel != null && double.IsNaN(Canvas.GetLeft(DataLabel)))
+            {
+                Canvas.SetTop(DataLabel, current.ChartLocation.Y);
+                Canvas.SetLeft(DataLabel, current.ChartLocation.X);
             }
 
             if (HoverShape != null)
@@ -151,12 +150,7 @@ namespace LiveCharts.Wpf.Points
             }
             else
             {
-                BindingOperations.SetBinding(Shape, Shape.FillProperty,
-                new Binding
-                {
-                    Path = new PropertyPath(Series.FillProperty),
-                    Source = ((Series)point.SeriesView)
-                });
+                Shape.Fill = ((Series) point.SeriesView).Fill;
             }
         }
     }

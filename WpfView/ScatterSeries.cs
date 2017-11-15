@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ namespace LiveCharts.Wpf
     /// <summary>
     /// The Bubble series, draws scatter series, only using X and Y properties or bubble series, if you also use the weight property, this series should be used in a cartesian chart.
     /// </summary>
-    public class ScatterSeries : Series, IScatterSeriesView
+    public class ScatterSeries : Series, IScatterSeriesView, IAreaPoint
     {
         #region Constructors
         /// <summary>
@@ -67,6 +67,9 @@ namespace LiveCharts.Wpf
 
         #region Properties
 
+        /// <summary>
+        /// The maximum point shape diameter property
+        /// </summary>
         public static readonly DependencyProperty MaxPointShapeDiameterProperty = DependencyProperty.Register(
             "MaxPointShapeDiameter", typeof (double), typeof (ScatterSeries), 
             new PropertyMetadata(default(double), CallChartUpdater()));
@@ -79,6 +82,9 @@ namespace LiveCharts.Wpf
             set { SetValue(MaxPointShapeDiameterProperty, value); }
         }
 
+        /// <summary>
+        /// The minimum point shape diameter property
+        /// </summary>
         public static readonly DependencyProperty MinPointShapeDiameterProperty = DependencyProperty.Register(
             "MinPointShapeDiameter", typeof (double), typeof (ScatterSeries), 
             new PropertyMetadata(default(double), CallChartUpdater()));
@@ -93,11 +99,28 @@ namespace LiveCharts.Wpf
 
         #endregion
 
+        #region Public Methods
+        /// <summary>
+        /// Gets the point diameter.
+        /// </summary>
+        /// <returns></returns>
+        public double GetPointDiameter()
+        {
+            return MaxPointShapeDiameter/2;
+        }
+        #endregion
+
         #region Overridden Methods
 
-        public override IChartPointView GetPointView(IChartPointView view, ChartPoint point, string label)
+        /// <summary>
+        /// Gets the view of a given point
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="label"></param>
+        /// <returns></returns>
+        public override IChartPointView GetPointView(ChartPoint point, string label)
         {
-            var pbv = (ScatterPointView) view;
+            var pbv = (ScatterPointView) point.View;
 
             if (pbv == null)
             {
@@ -107,7 +130,6 @@ namespace LiveCharts.Wpf
                     Shape = new Path
                     {
                         Stretch = Stretch.Fill,
-                        ClipToBounds = true,
                         StrokeThickness = StrokeThickness
                     }
                 };
@@ -152,15 +174,20 @@ namespace LiveCharts.Wpf
 
             if (pbv.HoverShape != null) pbv.HoverShape.Visibility = Visibility;
 
-            if (DataLabels && pbv.DataLabel == null)
+            if (DataLabels)
             {
-                pbv.DataLabel = BindATextBlock(0);
-                Panel.SetZIndex(pbv.DataLabel, int.MaxValue - 1);
-
-                Model.Chart.View.AddToDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = UpdateLabelContent(new DataLabelViewModel
+                {
+                    FormattedText = label,
+                    Point = point
+                }, pbv.DataLabel);
             }
 
-            if (pbv.DataLabel != null) pbv.DataLabel.Text = label;
+            if (!DataLabels && pbv.DataLabel != null)
+            {
+                Model.Chart.View.RemoveFromDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = null;
+            }
 
             if (point.Stroke != null) pbv.Shape.Stroke = (Brush)point.Stroke;
             if (point.Fill != null) pbv.Shape.Fill = (Brush)point.Fill;

@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ namespace LiveCharts.Wpf
         /// <param name="configuration"></param>
         public OhlcSeries(object configuration)
         {
-            Model = new ColumnAlgorithm(this);
+            Model = new OhlcAlgorithm(this);
             Configuration = configuration;
             InitializeDefuaults();
         }
@@ -67,6 +67,9 @@ namespace LiveCharts.Wpf
 
         #region Properties
 
+        /// <summary>
+        /// The maximum column width property
+        /// </summary>
         public static readonly DependencyProperty MaxColumnWidthProperty = DependencyProperty.Register(
             "MaxColumnWidth", typeof (double), typeof (OhlcSeries), new PropertyMetadata(default(double)));
         /// <summary>
@@ -78,6 +81,9 @@ namespace LiveCharts.Wpf
             set { SetValue(MaxColumnWidthProperty, value); }
         }
 
+        /// <summary>
+        /// The increase brush property
+        /// </summary>
         public static readonly DependencyProperty IncreaseBrushProperty = DependencyProperty.Register(
             "IncreaseBrush", typeof (Brush), typeof (OhlcSeries), new PropertyMetadata(default(Brush)));
         /// <summary>
@@ -89,6 +95,9 @@ namespace LiveCharts.Wpf
             set { SetValue(IncreaseBrushProperty, value); }
         }
 
+        /// <summary>
+        /// The decrease brush property
+        /// </summary>
         public static readonly DependencyProperty DecreaseBrushProperty = DependencyProperty.Register(
             "DecreaseBrush", typeof (Brush), typeof (OhlcSeries), new PropertyMetadata(default(Brush)));
         /// <summary>
@@ -99,19 +108,28 @@ namespace LiveCharts.Wpf
             get { return (Brush) GetValue(DecreaseBrushProperty); }
             set { SetValue(DecreaseBrushProperty, value); }
         }
-        
+
         #endregion
 
         #region Overridden Methods
 
+        /// <summary>
+        /// This method runs when the update starts
+        /// </summary>
         public override void OnSeriesUpdateStart()
         {
             //do nothing on updateStart
         }
 
-        public override IChartPointView GetPointView(IChartPointView view, ChartPoint point, string label)
+        /// <summary>
+        /// Gets the point view.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <param name="label">The label.</param>
+        /// <returns></returns>
+        public override IChartPointView GetPointView(ChartPoint point, string label)
         {
-            var pbv = (OhlcPointView) view;
+            var pbv = (OhlcPointView)point.View;
 
             if (pbv == null)
             {
@@ -177,15 +195,20 @@ namespace LiveCharts.Wpf
 
             if (pbv.HoverShape != null) pbv.HoverShape.Visibility = Visibility;
 
-            if (DataLabels && pbv.DataLabel == null)
+            if (DataLabels)
             {
-                pbv.DataLabel = BindATextBlock(0);
-                Panel.SetZIndex(pbv.DataLabel, int.MaxValue - 1);
-
-                Model.Chart.View.AddToDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = UpdateLabelContent(new DataLabelViewModel
+                {
+                    FormattedText = label,
+                    Point = point
+                }, pbv.DataLabel);
             }
 
-            if (pbv.DataLabel != null) pbv.DataLabel.Text = label;
+            if (!DataLabels && pbv.DataLabel != null)
+            {
+                Model.Chart.View.RemoveFromDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = null;
+            }
 
             if (point.Open < point.Close)
             {
@@ -212,7 +235,7 @@ namespace LiveCharts.Wpf
             SetCurrentValue(StrokeThicknessProperty, 2.5d);
             SetCurrentValue(MaxColumnWidthProperty, 35d);
             SetCurrentValue(MaxWidthProperty, 25d);
-            SetCurrentValue(IncreaseBrushProperty, new SolidColorBrush(Color.FromRgb(254, 178, 0)));
+            SetCurrentValue(IncreaseBrushProperty, new SolidColorBrush(Color.FromRgb(76, 174, 80)));
             SetCurrentValue(DecreaseBrushProperty, new SolidColorBrush(Color.FromRgb(238, 83, 80)));
 
             Func<ChartPoint, string> defaultLabel = x =>

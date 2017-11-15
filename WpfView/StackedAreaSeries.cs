@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,8 @@ namespace LiveCharts.Wpf
     /// <summary>
     /// The stacked area compares trends and percentage, add this series to a cartesian chart
     /// </summary>
+    /// <seealso cref="LiveCharts.Wpf.LineSeries" />
+    /// <seealso cref="LiveCharts.Definitions.Series.IStackedAreaSeriesView" />
     public class StackedAreaSeries : LineSeries, IStackedAreaSeriesView
     {
         #region Constructors
@@ -64,21 +66,27 @@ namespace LiveCharts.Wpf
 
         #region Properties
 
+        /// <summary>
+        /// The stack mode property
+        /// </summary>
         public static readonly DependencyProperty StackModeProperty = DependencyProperty.Register(
-            "StackMode", typeof (StackMode), typeof (StackedAreaSeries), 
+            "StackMode", typeof(StackMode), typeof(StackedAreaSeries),
             new PropertyMetadata(default(StackMode), CallChartUpdater()));
         /// <summary>
         /// Gets or sets the series stacked mode, values or percentage
         /// </summary>
         public StackMode StackMode
         {
-            get { return (StackMode) GetValue(StackModeProperty); }
+            get { return (StackMode)GetValue(StackModeProperty); }
             set { SetValue(StackModeProperty, value); }
         }
         #endregion
 
         #region Overridden Methods
 
+        /// <summary>
+        /// This method runs when the update starts
+        /// </summary>
         public override void OnSeriesUpdateStart()
         {
             ActiveSplitters = 0;
@@ -152,7 +160,7 @@ namespace LiveCharts.Wpf
         {
             SetCurrentValue(LineSmoothnessProperty, .7d);
             SetCurrentValue(PointGeometrySizeProperty, 0d);
-            SetCurrentValue(PointForeroundProperty, Brushes.White);
+            SetCurrentValue(PointForegroundProperty, Brushes.White);
             SetCurrentValue(ForegroundProperty, new SolidColorBrush(Color.FromRgb(229, 229, 229)));
             SetCurrentValue(StrokeThicknessProperty, 0d);
             DefaultFillOpacity = 1;

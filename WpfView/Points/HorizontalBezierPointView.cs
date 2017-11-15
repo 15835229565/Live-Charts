@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -49,6 +49,8 @@ namespace LiveCharts.Wpf.Points
             Container.Segments.Remove(Segment);
             Container.Segments.Insert(index, Segment);
 
+            ValidArea = new CoreRectangle(current.ChartLocation.X - 7.5, current.ChartLocation.Y - 7.5, 15, 15);
+
             if (IsNew)
             {
                 if (previosPbv != null && !previosPbv.IsNew)
@@ -57,41 +59,68 @@ namespace LiveCharts.Wpf.Points
                     Segment.Point2 = previosPbv.Segment.Point3;
                     Segment.Point3 = previosPbv.Segment.Point3;
 
-                    if (DataLabel != null)
-                    {
-                        Canvas.SetTop(DataLabel, Canvas.GetTop(previosPbv.DataLabel));
-                        Canvas.SetLeft(DataLabel, Canvas.GetLeft(previosPbv.DataLabel));
-                    }
-
                     if (Shape != null)
                     {
                         Canvas.SetTop(Shape, Canvas.GetTop(previosPbv.Shape));
                         Canvas.SetLeft(Shape, Canvas.GetLeft(previosPbv.Shape));
                     }
-                }
-                else
-                {
-                    Segment.Point1 = new Point(Data.Point1.X, y);
-                    Segment.Point2 = new Point(Data.Point2.X, y);
-                    Segment.Point3 = new Point(Data.Point3.X, y);
 
                     if (DataLabel != null)
                     {
-                        Canvas.SetTop(DataLabel, y);
-                        Canvas.SetLeft(DataLabel, current.ChartLocation.X - DataLabel.ActualWidth*.5);
-                    }
-
-                    if (Shape != null)
-                    {
-                        Canvas.SetTop(Shape, y);
-                        Canvas.SetLeft(Shape, current.ChartLocation.X - Shape.Width*.5);
+                        Canvas.SetTop(DataLabel, Canvas.GetTop(previosPbv.DataLabel));
+                        Canvas.SetLeft(DataLabel, Canvas.GetLeft(previosPbv.DataLabel));
                     }
                 }
+                else
+                {
+                    if (current.SeriesView.IsFirstDraw)
+                    {
+                        Segment.Point1 = new Point(Data.Point1.X, y);
+                        Segment.Point2 = new Point(Data.Point2.X, y);
+                        Segment.Point3 = new Point(Data.Point3.X, y);
+
+                        if (Shape != null)
+                        {
+                            Canvas.SetTop(Shape, y);
+                            Canvas.SetLeft(Shape, current.ChartLocation.X - Shape.Width*.5);
+                        }
+
+                        if (DataLabel != null)
+                        {
+                            Canvas.SetTop(DataLabel, y);
+                            Canvas.SetLeft(DataLabel, current.ChartLocation.X - DataLabel.ActualWidth * .5);
+                        }
+                    }
+                    else
+                    {
+                        var startPoint = ((LineSeries)current.SeriesView).Splitters[0].Left.Point;
+                        Segment.Point1 = startPoint;
+                        Segment.Point2 = startPoint;
+                        Segment.Point3 = startPoint;
+
+                        if (Shape != null)
+                        {
+                            Canvas.SetTop(Shape, y);
+                            Canvas.SetLeft(Shape, startPoint.X - Shape.Width * .5);
+                        }
+
+                        if (DataLabel != null)
+                        {
+                            Canvas.SetTop(DataLabel, y);
+                            Canvas.SetLeft(DataLabel, startPoint.X - DataLabel.ActualWidth * .5);
+                        }
+                    }
+                }
+            }
+            else if (DataLabel != null && double.IsNaN(Canvas.GetLeft(DataLabel)))
+            {
+                Canvas.SetTop(DataLabel, y);
+                Canvas.SetLeft(DataLabel, current.ChartLocation.X - DataLabel.ActualWidth*.5);
             }
 
             #region No Animated
 
-            if (chart.View.DisableAnimations)
+                if (chart.View.DisableAnimations)
             {
                 Segment.Point1 = Data.Point1.AsPoint();
                 Segment.Point2 = Data.Point2.AsPoint();
@@ -201,7 +230,7 @@ namespace LiveCharts.Wpf.Points
         {
             var lineSeries = (LineSeries)point.SeriesView;
             if (Shape != null) Shape.Fill = Shape.Stroke;
-            lineSeries.StrokeThickness = lineSeries.StrokeThickness + 1;
+            lineSeries.Path.StrokeThickness = lineSeries.StrokeThickness + 1;
         }
 
         public override void OnHoverLeave(ChartPoint point)
@@ -209,9 +238,9 @@ namespace LiveCharts.Wpf.Points
             var lineSeries = (LineSeries) point.SeriesView;
             if (Shape != null)
                 Shape.Fill = point.Fill == null
-                    ? lineSeries.PointForeround
+                    ? lineSeries.PointForeground
                     : (Brush) point.Fill;
-            lineSeries.StrokeThickness = lineSeries.StrokeThickness - 1;
+            lineSeries.Path.StrokeThickness = lineSeries.StrokeThickness;
         }
     }
 }

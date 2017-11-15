@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//Copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ namespace LiveCharts.Wpf
     /// <summary>
     /// The line series displays trends between points, you must add this series to a cartesian chart. 
     /// </summary>
-    public class LineSeries : Series, ILineSeriesView, IFondeable
+    public class LineSeries : Series, ILineSeriesView, IFondeable, IAreaPoint
     {
         #region Constructors
         /// <summary>
@@ -68,16 +68,50 @@ namespace LiveCharts.Wpf
         #endregion
 
         #region Private Properties
+        /// <summary>
+        /// Gets or sets the figure.
+        /// </summary>
+        /// <value>
+        /// The figure.
+        /// </value>
         protected PathFigure Figure { get; set; }
-        protected Path Path { get; set; }
+        internal Path Path { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is path initialized.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is path initialized; otherwise, <c>false</c>.
+        /// </value>
         protected bool IsPathInitialized { get; set; }
         internal List<LineSegmentSplitter> Splitters { get; set; }
+        /// <summary>
+        /// Gets or sets the active splitters.
+        /// </summary>
+        /// <value>
+        /// The active splitters.
+        /// </value>
         protected int ActiveSplitters { get; set; }
+        /// <summary>
+        /// Gets or sets the splitters collector.
+        /// </summary>
+        /// <value>
+        /// The splitters collector.
+        /// </value>
         protected int SplittersCollector { get; set; }
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is new.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is new; otherwise, <c>false</c>.
+        /// </value>
+        protected bool IsNew { get; set; }
         #endregion
 
         #region Properties
 
+        /// <summary>
+        /// The point geometry size property
+        /// </summary>
         public static readonly DependencyProperty PointGeometrySizeProperty = DependencyProperty.Register(
             "PointGeometrySize", typeof (double), typeof (LineSeries), 
             new PropertyMetadata(default(double), CallChartUpdater()));
@@ -90,18 +124,24 @@ namespace LiveCharts.Wpf
             set { SetValue(PointGeometrySizeProperty, value); }
         }
 
-        public static readonly DependencyProperty PointForeroundProperty = DependencyProperty.Register(
-            "PointForeround", typeof (Brush), typeof (LineSeries), 
+        /// <summary>
+        /// The point foreground property
+        /// </summary>
+        public static readonly DependencyProperty PointForegroundProperty = DependencyProperty.Register(
+            "PointForeground", typeof (Brush), typeof (LineSeries), 
             new PropertyMetadata(default(Brush)));
         /// <summary>
         /// Gets or sets the point shape foreground.
         /// </summary>
-        public Brush PointForeround
+        public Brush PointForeground
         {
-            get { return (Brush) GetValue(PointForeroundProperty); }
-            set { SetValue(PointForeroundProperty, value); }
+            get { return (Brush) GetValue(PointForegroundProperty); }
+            set { SetValue(PointForegroundProperty, value); }
         }
 
+        /// <summary>
+        /// The line smoothness property
+        /// </summary>
         public static readonly DependencyProperty LineSmoothnessProperty = DependencyProperty.Register(
             "LineSmoothness", typeof (double), typeof (LineSeries), 
             new PropertyMetadata(default(double), CallChartUpdater()));
@@ -114,10 +154,27 @@ namespace LiveCharts.Wpf
             set { SetValue(LineSmoothnessProperty, value); }
         }
 
+        /// <summary>
+        /// The area limit property
+        /// </summary>
+        public static readonly DependencyProperty AreaLimitProperty = DependencyProperty.Register(
+            "AreaLimit", typeof(double), typeof(LineSeries), new PropertyMetadata(double.NaN));
+        /// <summary>
+        /// Gets or sets the limit where the fill area changes orientation
+        /// </summary>
+        public double AreaLimit
+        {
+            get { return (double) GetValue(AreaLimitProperty); }
+            set { SetValue(AreaLimitProperty, value); }
+        }
+
         #endregion
 
         #region Overridden Methods
 
+        /// <summary>
+        /// This method runs when the update starts
+        /// </summary>
         public override void OnSeriesUpdateStart()
         {
             ActiveSplitters = 0;
@@ -130,18 +187,6 @@ namespace LiveCharts.Wpf
             }
 
             SplittersCollector++;
-
-            if (Figure != null && Values != null)
-            {
-                var xIni = ChartFunctions.ToDrawMargin(ActualValues.GetTracker(this).XLimit.Min, AxisOrientation.X, Model.Chart, ScalesXAt);
-
-                if (Model.Chart.View.DisableAnimations)
-                    Figure.StartPoint = new Point(xIni, Model.Chart.DrawMargin.Height);
-                else
-                    Figure.BeginAnimation(PathFigure.StartPointProperty,
-                        new PointAnimation(new Point(xIni, Model.Chart.DrawMargin.Height),
-                            Model.Chart.View.AnimationsSpeed));
-            }
 
             if (IsPathInitialized)
             {
@@ -174,16 +219,19 @@ namespace LiveCharts.Wpf
             Path.Data = geometry;
             
             Model.Chart.View.EnsureElementBelongsToCurrentDrawMargin(Path);
-
-            var x = ChartFunctions.ToDrawMargin(ActualValues.GetTracker(this).XLimit.Min, AxisOrientation.X, Model.Chart, ScalesXAt);
-            Figure.StartPoint = new Point(x, Model.Chart.DrawMargin.Height);
         }
 
-        public override IChartPointView GetPointView(IChartPointView view, ChartPoint point, string label)
+        /// <summary>
+        /// Gets the view of a given point
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="label"></param>
+        /// <returns></returns>
+        public override IChartPointView GetPointView(ChartPoint point, string label)
         {
             var mhr = PointGeometrySize < 10 ? 10 : PointGeometrySize;
 
-            var pbv = (HorizontalBezierPointView) view;
+            var pbv = (HorizontalBezierPointView) point.View;
 
             if (pbv == null)
             {
@@ -232,7 +280,6 @@ namespace LiveCharts.Wpf
                     pbv.Shape = new Path
                     {
                         Stretch = Stretch.Fill,
-                        ClipToBounds = true,
                         StrokeThickness = StrokeThickness
                     };
                 }
@@ -242,7 +289,7 @@ namespace LiveCharts.Wpf
 
             if (pbv.Shape != null)
             {
-                pbv.Shape.Fill = PointForeround;
+                pbv.Shape.Fill = PointForeground;
                 pbv.Shape.Stroke = Stroke;
                 pbv.Shape.StrokeThickness = StrokeThickness;
                 pbv.Shape.Width = PointGeometrySize;
@@ -255,21 +302,31 @@ namespace LiveCharts.Wpf
                 if (point.Fill != null) pbv.Shape.Fill = (Brush) point.Fill;
             }
 
-            if (DataLabels && pbv.DataLabel == null)
+            if (DataLabels)
             {
-                pbv.DataLabel = BindATextBlock(0);
-                Panel.SetZIndex(pbv.DataLabel, int.MaxValue - 1);
-
-                Model.Chart.View.AddToDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = UpdateLabelContent(new DataLabelViewModel
+                {
+                    FormattedText = label,
+                    Point = point
+                }, pbv.DataLabel);
             }
 
-            if (pbv.DataLabel != null) pbv.DataLabel.Text = label;
+            if (!DataLabels && pbv.DataLabel != null)
+            {
+                Model.Chart.View.RemoveFromDrawMargin(pbv.DataLabel);
+                pbv.DataLabel = null;
+            }
 
             return pbv;
         }
 
+        /// <summary>
+        /// This method runs when the update finishes
+        /// </summary>
         public override void OnSeriesUpdatedFinish()
         {
+            base.OnSeriesUpdatedFinish();
+
             foreach (var inactive in Splitters
                 .Where(s => s.SplitterCollectorIndex < SplittersCollector).ToList())
             {
@@ -280,6 +337,10 @@ namespace LiveCharts.Wpf
             }
         }
 
+        /// <summary>
+        /// Erases series
+        /// </summary>
+        /// <param name="removeFromView"></param>
         public override void Erase(bool removeFromView = true)
         {
             ActualValues.GetPoints(this).ForEach(p =>
@@ -287,6 +348,7 @@ namespace LiveCharts.Wpf
                 if (p.View != null)
                     p.View.RemoveFromView(Model.Chart);
             });
+            if (Path != null) Path.Visibility = Visibility.Hidden;
             if (removeFromView)
             {
                 Model.Chart.View.RemoveFromDrawMargin(Path);
@@ -296,8 +358,21 @@ namespace LiveCharts.Wpf
 
         #endregion
 
-        #region Public Methods 
+        #region Public Methods         
+        /// <summary>
+        /// Gets the point diameter.
+        /// </summary>
+        /// <returns></returns>
+        public double GetPointDiameter()
+        {
+            return (PointGeometry == null ? 0 : PointGeometrySize)/2;
+        }
 
+        /// <summary>
+        /// Starts the segment.
+        /// </summary>
+        /// <param name="atIndex">At index.</param>
+        /// <param name="location">The location.</param>
         public virtual void StartSegment(int atIndex, CorePoint location)
         {
             if (Splitters.Count <= ActiveSplitters)
@@ -310,6 +385,21 @@ namespace LiveCharts.Wpf
             var animSpeed = Model.Chart.View.AnimationsSpeed;
             var noAnim = Model.Chart.View.DisableAnimations;
 
+            var areaLimit = ChartFunctions.ToDrawMargin(double.IsNaN(AreaLimit)
+                ? Model.Chart.AxisY[ScalesYAt].FirstSeparator
+                : AreaLimit, AxisOrientation.Y, Model.Chart, ScalesYAt);
+
+            if (Values != null && atIndex == 0)
+            {
+                if (Model.Chart.View.DisableAnimations || IsNew)
+                    Figure.StartPoint = new Point(location.X, areaLimit);
+                else
+                    Figure.BeginAnimation(PathFigure.StartPointProperty,
+                        new PointAnimation(new Point(location.X, areaLimit), animSpeed));
+
+                IsNew = false;
+            }
+
             if (atIndex != 0)
             {
                 Figure.Segments.Remove(splitter.Bottom);
@@ -321,10 +411,10 @@ namespace LiveCharts.Wpf
                 }
 
                 if (noAnim)
-                    splitter.Bottom.Point = new Point(location.X, Model.Chart.DrawMargin.Height);
+                    splitter.Bottom.Point = new Point(location.X, areaLimit);
                 else
                     splitter.Bottom.BeginAnimation(LineSegment.PointProperty,
-                        new PointAnimation(new Point(location.X, Model.Chart.DrawMargin.Height), animSpeed));
+                        new PointAnimation(new Point(location.X, areaLimit), animSpeed));
                 Figure.Segments.Insert(atIndex, splitter.Bottom);
 
                 Figure.Segments.Remove(splitter.Left);
@@ -353,12 +443,26 @@ namespace LiveCharts.Wpf
             Figure.Segments.Insert(atIndex, splitter.Left);
         }
 
+        /// <summary>
+        /// Ends the segment.
+        /// </summary>
+        /// <param name="atIndex">At index.</param>
+        /// <param name="location">The location.</param>
         public virtual void EndSegment(int atIndex, CorePoint location)
         {
             var splitter = Splitters[ActiveSplitters-1];
 
             var animSpeed = Model.Chart.View.AnimationsSpeed;
             var noAnim = Model.Chart.View.DisableAnimations;
+
+            var areaLimit = ChartFunctions.ToDrawMargin(double.IsNaN(AreaLimit)
+                 ? Model.Chart.AxisY[ScalesYAt].FirstSeparator
+                 : AreaLimit, AxisOrientation.Y, Model.Chart, ScalesYAt);
+
+            var uw = Model.Chart.AxisX[ScalesXAt].EvaluatesUnitWidth
+                ? ChartFunctions.GetUnitWidth(AxisOrientation.X, Model.Chart, ScalesXAt)/2
+                : 0;
+            location.X -= uw;
 
             if (splitter.IsNew)
             {
@@ -367,10 +471,10 @@ namespace LiveCharts.Wpf
 
             Figure.Segments.Remove(splitter.Right);
             if (noAnim)
-                splitter.Right.Point = new Point(location.X, Model.Chart.DrawMargin.Height);
+                splitter.Right.Point = new Point(location.X, areaLimit);
             else
                 splitter.Right.BeginAnimation(LineSegment.PointProperty,
-                    new PointAnimation(new Point(location.X, Model.Chart.DrawMargin.Height), animSpeed));
+                    new PointAnimation(new Point(location.X, areaLimit), animSpeed));
             Figure.Segments.Insert(atIndex, splitter.Right);
 
             splitter.IsNew = false;
@@ -383,7 +487,7 @@ namespace LiveCharts.Wpf
         {
             SetCurrentValue(LineSmoothnessProperty, .7d);
             SetCurrentValue(PointGeometrySizeProperty, 8d);
-            SetCurrentValue(PointForeroundProperty, Brushes.White);
+            SetCurrentValue(PointForegroundProperty, Brushes.White);
             SetCurrentValue(StrokeThicknessProperty, 2d);
 
             Func<ChartPoint, string> defaultLabel = x => Model.CurrentYAxis.GetFormatter()(x.Y);
@@ -391,6 +495,8 @@ namespace LiveCharts.Wpf
 
             DefaultFillOpacity = 0.15;
             Splitters = new List<LineSegmentSplitter>();
+
+            IsNew = true;
         }
 
         #endregion

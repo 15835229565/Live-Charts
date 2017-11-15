@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -43,18 +43,17 @@ namespace LiveCharts.Wpf
             var updater = new Components.ChartUpdater(freq);
             ChartCoreModel = new CartesianChartCore(this, updater);
 
-            if (DesignerProperties.GetIsInDesignMode(this))
-            {
-                SetCurrentValue(SeriesProperty, GetDesignerModeCollection());
-            }
-            else
-            {
-                SetCurrentValue(SeriesProperty, new SeriesCollection());
-            }
+            SetCurrentValue(SeriesProperty,
+                DesignerProperties.GetIsInDesignMode(this)
+                    ? GetDesignerModeCollection()
+                    : new SeriesCollection());
 
             SetCurrentValue(VisualElementsProperty, new VisualElementsCollection());
         }
 
+        /// <summary>
+        /// The visual elements property
+        /// </summary>
         public static readonly DependencyProperty VisualElementsProperty = DependencyProperty.Register(
             "VisualElements", typeof (VisualElementsCollection), typeof (CartesianChart),
             new PropertyMetadata(default(VisualElementsCollection), OnVisualCollectionChanged));

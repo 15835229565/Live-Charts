@@ -1,6 +1,6 @@
 ﻿//The MIT License(MIT)
 
-//copyright(c) 2016 Alberto Rodriguez
+//Copyright(c) 2016 Alberto Rodriguez & LiveCharts Contributors
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -53,17 +53,17 @@ namespace LiveCharts.Wpf.Points
                 HighToLowLine.Y1 = StartReference;
                 HighToLowLine.Y2 = StartReference;
 
-                Canvas.SetTop(OpenToCloseRectangle, (Open+Close)/2);
+                Canvas.SetTop(OpenToCloseRectangle, (Open + Close) / 2);
                 Canvas.SetLeft(OpenToCloseRectangle, Left);
 
                 OpenToCloseRectangle.Width = Width;
                 OpenToCloseRectangle.Height = 0;
+            }
 
-                if (DataLabel != null)
-                {
-                    Canvas.SetTop(DataLabel, current.ChartLocation.Y);
-                    Canvas.SetLeft(DataLabel, current.ChartLocation.X);
-                }
+            if (DataLabel != null && double.IsNaN(Canvas.GetLeft(DataLabel)))
+            {
+                Canvas.SetTop(DataLabel, current.ChartLocation.Y);
+                Canvas.SetLeft(DataLabel, current.ChartLocation.X);
             }
 
             if (HoverShape != null)
@@ -74,6 +74,39 @@ namespace LiveCharts.Wpf.Points
                 Canvas.SetLeft(HoverShape, Left);
                 Canvas.SetTop(HoverShape, High);
             }
+
+
+            var candleSeries = (CandleSeries)current.SeriesView;
+
+            if (candleSeries.ColoringRules == null)
+            {
+                if (current.Open <= current.Close)
+                {
+                    HighToLowLine.Stroke = candleSeries.IncreaseBrush;
+                    OpenToCloseRectangle.Fill = candleSeries.IncreaseBrush;
+                    OpenToCloseRectangle.Stroke = candleSeries.IncreaseBrush;
+                }
+                else
+                {
+                    HighToLowLine.Stroke = candleSeries.DecreaseBrush;
+                    OpenToCloseRectangle.Fill = candleSeries.DecreaseBrush;
+                    OpenToCloseRectangle.Stroke = candleSeries.DecreaseBrush;
+                }
+            }
+            else
+            {
+                foreach (var rule in candleSeries.ColoringRules)
+                {
+                    if (!rule.Condition(current, previousDrawn)) continue;
+
+                    HighToLowLine.Stroke = rule.Stroke;
+                    OpenToCloseRectangle.Fill = rule.Fill;
+                    OpenToCloseRectangle.Stroke = rule.Stroke;
+
+                    break;
+                }
+            }
+
 
             if (chart.View.DisableAnimations)
             {
@@ -92,9 +125,9 @@ namespace LiveCharts.Wpf.Points
                 {
                     DataLabel.UpdateLayout();
 
-                    var cx = CorrectXLabel(current.ChartLocation.X - DataLabel.ActualHeight*.5, chart);
-                    var cy = CorrectYLabel(current.ChartLocation.Y - DataLabel.ActualWidth*.5, chart);
-                    
+                    var cx = CorrectXLabel(current.ChartLocation.X - DataLabel.ActualHeight * .5, chart);
+                    var cy = CorrectYLabel(current.ChartLocation.Y - DataLabel.ActualWidth * .5, chart);
+
                     Canvas.SetTop(DataLabel, cy);
                     Canvas.SetLeft(DataLabel, cx);
                 }
@@ -102,14 +135,16 @@ namespace LiveCharts.Wpf.Points
                 return;
             }
 
+            
+
             var animSpeed = chart.View.AnimationsSpeed;
 
             if (DataLabel != null)
             {
                 DataLabel.UpdateLayout();
 
-                var cx = CorrectXLabel(current.ChartLocation.X - DataLabel.ActualWidth*.5, chart);
-                var cy = CorrectYLabel(current.ChartLocation.Y - DataLabel.ActualHeight*.5, chart);
+                var cx = CorrectXLabel(current.ChartLocation.X - DataLabel.ActualWidth * .5, chart);
+                var cy = CorrectYLabel(current.ChartLocation.Y - DataLabel.ActualHeight * .5, chart);
 
                 DataLabel.BeginAnimation(Canvas.LeftProperty, new DoubleAnimation(cx, animSpeed));
                 DataLabel.BeginAnimation(Canvas.TopProperty, new DoubleAnimation(cy, animSpeed));
